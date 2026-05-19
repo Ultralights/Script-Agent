@@ -37,6 +37,12 @@ A lightweight podcast script agent for converting story links into EV-friendly p
    export OPENAI_API_KEY="your_api_key_here"
    ```
 
+   or create a local `.env` file and keep it secret. Do not commit your API key to git.
+
+   ```bash
+   cp .env.example .env
+   ```
+
 ## Usage
 
 ### Single story segment
@@ -71,4 +77,5 @@ python script_agent.py --mode episode --urls "https://example.com/story1" "https
 
 - The script is built to avoid personal shaming and keep the tone inviting.
 - Humor is aimed at fossil fuel volatility, not drivers.
+- Keep your `OPENAI_API_KEY` secret and never commit it to the repo.
 - You can adjust the `PROMPT_TEMPLATE` in `script_agent.py` if you want to refine the tone further.
