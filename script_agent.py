@@ -55,6 +55,8 @@ EPISODE_PROMPT_TEMPLATE = (
     "Use short, teleprompter-friendly lines and double-spaced formatting so the host can read directly from the script. "
     "Keep the tone enthusiastic, welcoming, and optimistic for newcomers. "
     "Use witty, irreverent satire on fossil fuel volatility and outdated ICE economics, but avoid shaming drivers. "
+    "Pack each segment with humor, playful headlines, and cheeky punchlines that make the episode feel lively and memorable. "
+    "Use bold metaphors like oil price rollercoasters, dinosaur-juice drama, and EVs sipping electrons at home. "
     "Celebrate EV adoption as practical, wallet-friendly, and future-proof. "
     "Start with a strong welcome for new listeners and end with an upbeat closing on why EVs are the better choice now.\n\n"
     "Here are the story summaries to include or reference in the episode. Place each story in the best fitting segment.\n\n"

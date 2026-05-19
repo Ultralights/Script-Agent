@@ -60,6 +60,7 @@ python script_agent.py --mode episode --urls "https://example.com/story1" "https
 - Episode mode compiles multiple stories into a single show with segments:
   Local Australia News, International News, Policy News, Infrastructure, Renewable Energy, Environment, Fun Stories.
 - The generated output is optimized for teleprompter use with short lines and double-spaced formatting.
+- The episode descriptions are designed to be as humorous as possible, with punchy jokes, vivid metaphors, and cheeky energy-market roasts.
 
 ## Customizing the voice
 
