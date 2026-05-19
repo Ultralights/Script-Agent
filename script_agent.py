@@ -161,13 +161,10 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Generate a podcast script draft from one story or compile multiple stories into a teleprompter-ready episode."
     )
-    parser.add_argument("--mode", choices=["segment", "episode"], default="segment",
-                        help="Choose segment mode for a single story or episode mode for a compiled show.")
-
-    source_group = parser.add_mutually_exclusive_group(required=True)
-    source_group.add_argument("--url", help="Link to the story or article for a single segment.")
-    source_group.add_argument("--urls", nargs="+", help="One or more story links to compile into an episode.")
-
+    parser.add_argument("--mode", choices=["segment", "episode"], default="",
+                        help="Choose segment mode for a single story or episode mode for a compiled show. If omitted, you'll be prompted.")
+    parser.add_argument("--url", help="Link to the story or article for a single segment.")
+    parser.add_argument("--urls", nargs="+", help="One or more story links to compile into an episode.")
     parser.add_argument("--style", default="",
                         help="Optional direction for style or mood (e.g. 'snarky but friendly', 'bright and urgent', 'deep explainer').")
     parser.add_argument("--length", choices=["short", "medium", "long"], default="medium",
@@ -176,6 +173,47 @@ def parse_args() -> argparse.Namespace:
                         help="OpenAI model to use (default: gpt-3.5-turbo).")
     parser.add_argument("--output", help="Optional file path to save the generated script.")
     return parser.parse_args()
+
+
+def prompt_for_inputs() -> tuple[str, list[str], str, str]:
+    """Interactively prompt the user for mode, URLs, style, and length."""
+    print("\n🎙️  Podcast Script Agent")
+    print("=" * 50)
+
+    # Ask for mode
+    while True:
+        mode_input = input("\nSelect mode (segment/episode) [segment]: ").strip().lower() or "segment"
+        if mode_input in ["segment", "episode"]:
+            mode = mode_input
+            break
+        print("Invalid choice. Please enter 'segment' or 'episode'.")
+
+    # Ask for URL(s)
+    if mode == "segment":
+        url_input = input("\nEnter story URL: ").strip()
+        if not url_input:
+            print("Error: URL is required.")
+            raise ValueError("URL required for segment mode")
+        urls = [url_input]
+    else:
+        url_input = input("\nEnter story URLs (comma-separated for multiple): ").strip()
+        if not url_input:
+            print("Error: At least one URL is required.")
+            raise ValueError("URLs required for episode mode")
+        urls = [url.strip() for url in url_input.split(",")]
+
+    # Ask for style
+    style = input("\nDesired style [snarky and upbeat]: ").strip() or "snarky and upbeat"
+
+    # Ask for length
+    while True:
+        length_input = input("\nPreferred length (short/medium/long) [medium]: ").strip().lower() or "medium"
+        if length_input in ["short", "medium", "long"]:
+            length = length_input
+            break
+        print("Invalid choice. Please enter 'short', 'medium', or 'long'.")
+
+    return mode, urls, style, length
 
 
 def fetch_multiple_story_texts(urls: list[str]) -> list[tuple[str, str]]:
@@ -197,32 +235,46 @@ def build_episode_story_block(stories: list[tuple[str, str]]) -> str:
 def main() -> int:
     args = parse_args()
 
+    # Determine if we should use interactive mode
+    use_interactive = not args.url and not args.urls
+    if use_interactive:
+        try:
+            mode, urls, style, length = prompt_for_inputs()
+        except (ValueError, KeyboardInterrupt) as exc:
+            print(f"\nAborted: {exc}")
+            return 1
+    else:
+        mode = args.mode or "segment"
+        urls = args.urls if args.urls else ([args.url] if args.url else [])
+        style = args.style
+        length = args.length
+
+        if not urls:
+            print("Error: Either --url or --urls is required when not using interactive mode.", file=sys.stderr)
+            return 1
+
     story_title = None
     story_summary = None
     max_tokens = 900
 
     try:
-        if args.mode == "episode":
-            if not args.urls:
-                raise RuntimeError("Episode mode requires --urls with one or more story links.")
-            stories = fetch_multiple_story_texts(args.urls)
+        if mode == "episode":
+            stories = fetch_multiple_story_texts(urls)
             story_summary = build_episode_story_block(stories)
             max_tokens = 1200
         else:
-            if not args.url:
-                raise RuntimeError("Segment mode requires --url.")
-            story_title, story_summary = fetch_story_text(args.url)
+            story_title, story_summary = fetch_story_text(urls[0])
     except RuntimeError as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 1
 
     prompt = build_prompt(
-        args.url if args.mode == "segment" else None,
+        urls[0] if mode == "segment" else None,
         story_title,
         story_summary,
-        args.style,
-        args.length,
-        args.mode,
+        style,
+        length,
+        mode,
     )
 
     try:
@@ -234,13 +286,14 @@ def main() -> int:
         print(f"OpenAI request failed: {exc}", file=sys.stderr)
         return 1
 
-    if args.mode == "episode":
+    if mode == "episode":
         script_draft = format_teleprompter_text(script_draft)
 
-    if args.output:
-        with open(args.output, "w", encoding="utf-8") as f:
+    output_file = args.output or (f"{mode}_script.txt" if use_interactive else None)
+    if output_file:
+        with open(output_file, "w", encoding="utf-8") as f:
             f.write(script_draft)
-        print(f"Saved script draft to: {args.output}")
+        print(f"\n✅ Saved script to: {output_file}")
     else:
         print(script_draft)
 

@@ -1,0 +1,52 @@
+name: Weekly Episode Generation
+
+on:
+  schedule:
+    # Runs every Monday at 8 AM UTC
+    - cron: '0 8 * * 1'
+  workflow_dispatch:
+
+jobs:
+  generate-episode:
+    runs-on: ubuntu-latest
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Load story URLs from upcoming_stories.json
+        id: load_urls
+        run: |
+          if [[ -f "upcoming_stories.json" ]]; then
+            urls=$(python -c "import json; data = json.load(open('upcoming_stories.json')); print(' '.join(data.get('urls', [])))")
+            echo "urls=$urls" >> $GITHUB_OUTPUT
+          else
+            echo "upcoming_stories.json not found. Please create it with story URLs."
+            exit 1
+          fi
+
+      - name: Generate weekly episode
+        run: |
+          python script_agent.py --mode episode --urls ${{ steps.load_urls.outputs.urls }} \
+            --style "energetic and punchy" \
+            --length medium \
+            --output "episode_$(date +%Y-%m-%d).txt"
+
+      - name: Commit and push generated episode
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add episode_*.txt
+          git commit -m "Generate weekly episode - $(date +%Y-%m-%d)" || echo "No changes to commit"
+          git push

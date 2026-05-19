@@ -53,28 +53,60 @@ A workflow is included at `.github/workflows/generate-script.yml` that can use a
 
 ## Usage
 
-### Single story segment
+### Interactive mode (recommended)
+
+Simply run the script and follow the prompts:
 
 ```bash
-python script_agent.py --mode segment --url "https://example.com/story" --style "snarky and upbeat" --length medium
+python script_agent.py
 ```
 
-Optional save output:
+You'll be asked to:
+- Select mode (segment or episode)
+- Enter story URL(s) — comma-separated for multiple stories
+- Desired style
+- Preferred length
+
+The script will save the output to `segment_script.txt` or `episode_script.txt` by default.
+
+### Command-line mode
+
+Provide all options as arguments:
+
+#### Single story segment
 
 ```bash
-python script_agent.py --mode segment --url "https://example.com/story" --style "funny, welcoming new listeners" --length short --output draft.txt
+python script_agent.py --mode segment --url "https://example.com/story" --style "snarky and upbeat" --length medium --output draft.txt
 ```
 
-### Compiled episode mode
+#### Episode from multiple stories
 
 ```bash
 python script_agent.py --mode episode --urls "https://example.com/story1" "https://example.com/story2" "https://example.com/story3" --style "warm but sharp" --length medium --output episode.txt
 ```
 
-- Episode mode compiles multiple stories into a single show with segments:
-  Local Australia News, International News, Policy News, Infrastructure, Renewable Energy, Environment, Fun Stories.
-- The generated output is optimized for teleprompter use with short lines and double-spaced formatting.
-- The episode descriptions are designed to be as humorous as possible, with punchy jokes, vivid metaphors, and cheeky energy-market roasts.
+### Weekly automated episodes
+
+A scheduled workflow runs every Monday at 8 AM UTC to generate an episode automatically.
+
+1. Create `upcoming_stories.json` in the repo root (copy from `upcoming_stories.json.example`):
+
+   ```json
+   {
+     "urls": [
+       "https://example.com/story1",
+       "https://example.com/story2",
+       "https://example.com/story3"
+     ]
+   }
+   ```
+
+2. The workflow will:
+   - Read URLs from `upcoming_stories.json`
+   - Generate a teleprompter-ready episode
+   - Commit and push the script to the repo with a timestamp
+
+You can also trigger it manually from the GitHub Actions tab.
 
 ## Customizing the voice
 
