@@ -43,6 +43,14 @@ A lightweight podcast script agent for converting story links into EV-friendly p
    cp .env.example .env
    ```
 
+### GitHub Actions
+
+A workflow is included at `.github/workflows/generate-script.yml` that can use a repository secret named `OPENAI_API_KEY`.
+
+1. Add your API key to the repo secrets with the name `OPENAI_API_KEY`.
+2. Trigger the workflow manually from GitHub using `workflow_dispatch`.
+3. Provide either `url` for single-story segment mode or `urls` for episode mode.
+
 ## Usage
 
 ### Single story segment

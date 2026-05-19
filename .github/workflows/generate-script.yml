@@ -1,0 +1,86 @@
+name: Generate Script
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Script mode - segment or episode'
+        required: true
+        default: 'segment'
+        type: choice
+        options:
+          - segment
+          - episode
+      url:
+        description: 'Single story URL for segment mode'
+        required: false
+        default: ''
+      urls:
+        description: 'Comma-separated story URLs for episode mode'
+        required: false
+        default: ''
+      style:
+        description: 'Style direction for the script'
+        required: false
+        default: 'snarky and upbeat'
+      length:
+        description: 'Preferred script length'
+        required: false
+        default: 'medium'
+        type: choice
+        options:
+          - short
+          - medium
+          - long
+      output:
+        description: 'Output filename to save the generated script'
+        required: false
+        default: 'episode.txt'
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Generate podcast script
+        run: |
+          if [[ "${{ github.event.inputs.mode }}" == "episode" ]]; then
+            if [[ -z "${{ github.event.inputs.urls }}" ]]; then
+              echo "Episode mode requires --urls input."
+              exit 1
+            fi
+            python script_agent.py --mode episode --urls $(echo "${{ github.event.inputs.urls }}" | tr ',' ' ') \
+              --style "${{ github.event.inputs.style }}" \
+              --length "${{ github.event.inputs.length }}" \
+              --output "${{ github.event.inputs.output }}"
+          else
+            if [[ -z "${{ github.event.inputs.url }}" ]]; then
+              echo "Segment mode requires --url input."
+              exit 1
+            fi
+            python script_agent.py --mode segment --url "${{ github.event.inputs.url }}" \
+              --style "${{ github.event.inputs.style }}" \
+              --length "${{ github.event.inputs.length }}" \
+              --output "${{ github.event.inputs.output }}"
+          fi
+
+      - name: Upload generated script
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: generated-podcast-script
+          path: ${{ github.event.inputs.output }}
